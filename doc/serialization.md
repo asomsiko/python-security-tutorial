@@ -13,10 +13,19 @@ The `pickle` is a default module for python object serialization and
 de-serialization. It convertsthe whole python objects hierarhy into a byte
 stream and back.
 
+TODO: demo how pickle is used for good
+
 Tip: Point your attention to security disclamers in Python docs:\
-_"Warning The pickle module is not intended to be secure against erroneous or
-maliciously constructed data. Never unpickle data received from an untrusted or
-unauthenticated source."_
+[Pickle documentation]: _"Warning The pickle module is not intended to be secure
+against erroneous or maliciously constructed data. Never unpickle data received
+from an untrusted or unauthenticated source."_
+
+Pickle can also handle the module imports and execute functions:
+
+``` python
+import pickle
+pickle.loads(b"cos\nsystem\n(S'echo hello world'\ntR.")
+```
 
 If you brave enough and need to use pickle here some techniques can reduce
 security risks:
@@ -25,12 +34,6 @@ security risks:
 
 2. When loading from network use cryptographic signature
 
-Pickle can handle the module imports and execute functions:
-
-``` python
-import pickle
-pickle.loads(b"cos\nsystem\n(S'echo hello world'\ntR.")
-```
 
 The solution to protect here is to use restrict globals can be called.
 
@@ -62,6 +65,8 @@ def restricted_loads(s):
     return RestrictedUnpickler(io.BytesIO(s)).load()
 ```
 
+TODO: demo how restricted pickler can be used
+
 At the end whis will not ptotect you. Dedicated hacker can always find a way.
 Avoid using pickle. Consider JSON or protobuf as secure alternatives.
 
@@ -79,9 +84,16 @@ with np.load(path, allow_pickle=False) as data:
     print(data)
 ```
 
-TODO: Loading array of objects
+TODO: Explain that loading array of objects is not safe and repeat strict
+permission or crypto verification reuirements
 
 ## Yaml
+
+TODO: general introduction to yaml
+
+TODO: basic types
+
+TODO: advanced python types
 
 yaml.load is as powerfull as pickle. Use yaml.safe_load when loading yaml files.
 yaml can construct arbitray python objects and yaml.safe_load limits this to
@@ -95,7 +107,65 @@ yaml.safe_load(...)
 You can check yourself with `yaml.safe_dump()` which only creates safe yaml
 files.
 
-TODO: extending safe objects: A python object can be marked as safe and thus be
-recognized by yaml.safe_load. To do this, derive it from yaml.YAMLObject (as
-explained in section Constructors, representers, resolvers) and explicitly set
-its class property yaml_loader to yaml.SafeLoader.
+PyYAML provide a hooks and helper classes to use full power of PyYAML safely.
+
+To declare you robject can be loaded safely you can inherit it from
+yaml.YAMLObject and set `yaml_loader=yaml.SafeLoader`.
+
+``` python
+import yaml
+
+class Monster(yaml.YAMLObject):
+    yaml_tag = u'!Monster'
+    yaml_loader = yaml.SafeLoader
+    yaml_dumper = yaml.SafeDumper
+    def __init__(self, name, hp, ac, attacks):
+        self.name = name
+        self.hp = hp
+        self.ac = ac
+        self.attacks = attacks
+print(yaml.safe_dump(Monster(name='Cave lizard', hp=[3,6], ac=16, attacks=['BITE','HURT'])))
+print(yaml.safe_load('!Monster {ac: 16, attacks: [BITE, HURT], hp: [3, 6], name: Cave lizard}'))
+```
+
+What is you need advanced scalar construction?
+
+``` yaml
+tests:
+- mark: pytest.mark.xfail
+  name: feature_A_exists
+- name: feature_B_exists
+```
+
+Lets check what pytest mark is:
+
+``` python
+import pytest
+
+print(pytest.mark.xfail)
+print(pytest.mark.__getattr__('xfail'))
+```
+
+Now we can register constructor and representer:
+
+``` python
+import re
+import yaml
+import pytest
+
+def pytest_mark_constructor(loader, node):
+    value = loader.construct_scalar(node)
+    return pytest.mark.__getattr__(value.rsplit(".", 1)[1])
+def pytest_mark_representer(dumper, data):
+    return dumper.represent_scalar('tag:yaml.org,2002:str', u'pytest.mark.%s' % data.name)
+yaml.add_constructor(u'!pytest.mark', pytest_mark_constructor, Loader=yaml.SafeLoader)
+yaml.add_implicit_resolver(u'!pytest.mark', re.compile(r'^pytest\.mark\.[a-zA-Z]+$'))
+yaml.add_representer(type(pytest.mark.xfail), pytest_mark_representer, Dumper=yaml.SafeDumper)
+
+print(yaml.safe_load('mark: pytest.mark.xfail'))
+print(yaml.safe_load('mark: "pytest.mark.xfail"'))
+
+print(yaml.safe_dump({'tests':[{'name':'feature_A_exists', 'mark':pytest.mark.xfail}, {'name':'feature_B_exists'}]}))
+```
+
+[Pickle documentation]:https://docs.python.org/3/library/pickle.html

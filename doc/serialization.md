@@ -67,7 +67,7 @@ def restricted_loads(s):
 
 TODO: demo how restricted pickler can be used
 
-At the end whis will not ptotect you. Dedicated hacker can always find a way.
+At the end whis will not protect you. Dedicated hacker can always find a way.
 Avoid using pickle. Consider JSON or protobuf as secure alternatives.
 
 [python-can-i-safely-unpickle-untrusted-data](https://stackoverflow.com/questions/25353753/python-can-i-safely-unpickle-untrusted-data)
@@ -89,7 +89,26 @@ permission or crypto verification reuirements
 
 ## Yaml
 
-TODO: general introduction to yaml
+Yaml is data serialization format. It provides a simple reading and editing in plain text, thus frequiently used as a format for various configuration files.
+
+Yaml vs. JSON:
+
+``` yaml
+klocwork_linux:
+  os:
+    ubuntu18
+
+klocwork_win:
+  os:
+    windows
+```
+
+``` json
+klocwork_linux: {
+  os: ubuntu18,
+klocwork_win: {
+  os: windows
+```
 
 TODO: basic types
 
@@ -128,7 +147,7 @@ print(yaml.safe_dump(Monster(name='Cave lizard', hp=[3,6], ac=16, attacks=['BITE
 print(yaml.safe_load('!Monster {ac: 16, attacks: [BITE, HURT], hp: [3, 6], name: Cave lizard}'))
 ```
 
-What is you need advanced scalar construction?
+What if you need advanced scalar construction?
 
 ``` yaml
 tests:

@@ -1,0 +1,5 @@
+numpy==1.23.1
+pytest==7.1.2
+PyYAML==6.0
+jsonschema==4.9.1
+rise==5.7.1
